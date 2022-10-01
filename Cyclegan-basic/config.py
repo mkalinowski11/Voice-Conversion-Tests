@@ -15,5 +15,6 @@ class Config:
     self.CHECKPOINT_GEN_SRC = None
     self.CHECKPOINT_DISC_TARGET = None
     self.CHECKPOINT_TRG_SRC = None
-
-config = Config()
+    self.SRC_VOICE_PATH = None
+    self.TARGET_VOICE_PATH = None
+    self.MODELS_PATH = None
