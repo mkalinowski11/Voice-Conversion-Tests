@@ -2,6 +2,7 @@ import numpy as np
 import os
 from torch.utils.data import Dataset
 import librosa
+import random
 import torch
 
 SAMPLE_RATE = 16000
@@ -72,23 +73,28 @@ class Voice_Dataset(Dataset):
 
         self.source_voices = os.listdir(self.source_voice_path)
         self.target_voices = os.listdir(self.target_voice_path)
+        self.source_voices.sort()
+        self.target_voices.sort()
 
         self.source_voices_len = len(self.source_voices)
         self.target_voices_len = len(self.target_voices)
 
         self.dataset_length = min(self.source_voices_len, self.target_voices_len)
+        self.ids = [idx for idx in range(self.dataset_length)]
+        random.shuffle(self.ids)
 
     def __len__(self):
         return self.dataset_length
 
     def __getitem__(self, index):
+      sequence_idx = self.ids[index]
       src_voice = os.path.join(
                                 self.source_voice_path,
-                                self.source_voices[index % self.source_voices_len]
+                                self.source_voices[sequence_idx]
                                 )
       target_voice = os.path.join(
                                   self.target_voice_path,
-                                  self.target_voices[index % self.target_voices_len]
+                                  self.target_voices[sequence_idx]
                                   )
       src_voice, sr = librosa.load(src_voice, sr = SAMPLE_RATE)
       target_voice, sr = librosa.load(target_voice, sr = SAMPLE_RATE)
