@@ -16,7 +16,7 @@ class Config:
         }
         self.num_epochs = 1001
         self.epoch_save = 200
-        self.start_epoch = 0
+        self.current_epoch = 0
         self.gen_freq = 5
         self.batch_size = 1
         self.num_workers = 0

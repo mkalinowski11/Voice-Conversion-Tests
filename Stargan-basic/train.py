@@ -24,7 +24,7 @@ def save_checkpoint(model, optimizer, config, filename="my_checkpoint.pth"):
     }
     torch.save(checkpoint, filename)
 
-def train(config, source_voice_path, target_voice_path, model_data_save_path):
+def train(config, source_voice_path, target_voice_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset = Voice_Dataset(source_voice_path = source_voice_path,
                   target_voice_path = target_voice_path)
@@ -52,10 +52,10 @@ def train(config, source_voice_path, target_voice_path, model_data_save_path):
 
     if config.load_checkpoint:
         # generator
-        config.start_epoch = load_checkpoint(gen, gen_opt, config.resume_path_gen, config.optimizers['gen_lr'], device)
+        config.current_epoch = load_checkpoint(gen, gen_opt, config.resume_path_gen, config.optimizers['gen_lr'], device)
         # discriminator
         _ = load_checkpoint(dis, dis_opt, config.resume_path_dis, config.optimizers['dis_lr'], device)
-    for epoch in range(config.start_epoch, config.num_epochs):
+    for epoch in range(config.current_epoch, config.num_epochs):
         loop = tqdm(train_loader, leave=True)
         for idx, (src_spect , src_embed, trg_spect , trg_embed) in enumerate(loop):
             src_spect = src_spect.to(device)
@@ -75,7 +75,7 @@ def train(config, source_voice_path, target_voice_path, model_data_save_path):
             dis_opt.zero_grad()
             dis_loss.backward(retain_graph=True)
             dis_opt.step()
-            if idx % config.gen_freq == 0:
+            if idx % config.gen_freq == 0 and idx != 0:
                 id_loss = l2_loss(src_spect, x_src_src)
                 cyc_loss = l1_loss(src_spect, x_src_trg_src)
                 d_src_trg_2 = dis(x_src_trg, trg_embed, src_embed)
