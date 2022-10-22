@@ -106,11 +106,6 @@ class Voice_Dataset(Dataset):
       #
       src_voice_amp = amp_to_decibel(src_voice_amp)
       target_voice_amp = amp_to_decibel(target_voice_amp)
-      #src_voice_amp = fit_spectrogram_db(src_voice_amp)
-      #target_voice_amp = fit_spectrogram_db(target_voice_amp)
-      # scaling
-      src_voice_amp, _, _ = min_max_scaling(src_voice_amp)
-      target_voice_amp, _, _ = min_max_scaling(target_voice_amp)
       # convert to torch
       src_voice_amp = torch.from_numpy(src_voice_amp)
       target_voice_amp = torch.from_numpy(target_voice_amp)
