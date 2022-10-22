@@ -20,7 +20,6 @@ def convert_to_complex(amplitude, phase):
   return amplitude * np.vectorize(complex)(np.cos(phase), np.sin(phase))
 
 def amp_to_decibel(S, ref = 1.0):
-  #return 10 * np.log10( (S + EPS)  / ref)
   return 10 * np.log10( (S)  / ref)
 
 def decibel_revert(db):
@@ -38,34 +37,9 @@ def fit_sound(wav, cutoff = CUTOFF):
     return signal_padding
   return wav[:cutoff]
 
-def fit_spectrogram_db(spect, cutoff = SPECT_CUTOFF):
-  if spect.shape[1] >= cutoff:
-    x = spect[:, :cutoff]
-    return x
-  else:
-    while spect.shape[1] != cutoff:
-      number_of_samples = spect.shape[1] if cutoff - spect.shape[1] >= spect.shape[1] else cutoff - spect.shape[1]
-      padding = spect[:, :number_of_samples]
-      spect = np.concatenate((spect, padding), axis = 1)
-    return spect
-
-def normalize(spect):
-  spect_mean, spect_std = spect.mean(), spect.std()
-  spect_normalized = (spect - spect_mean) / spect_std
-  return spect_normalized, spect_mean, spect_std
-
-def denormalize(spect, spect_mean, spect_std):
-  return spect * spect_std + spect_mean
-
-def min_max_scaling(spect):
-  spect_max, spect_min = spect.max(), spect.min()
-  spect_min_max = (spect - spect_min) / (spect_max - spect_min)
-  return spect_min_max, spect_max, spect_min
-
-def min_max_descale(spect, spect_max, spect_min):
-  spect_descaled = spect * (spect_max - spect_min) + spect_min
-  return spect_descaled
-
+def complex_to_sound(stft_signal):
+  return librosa.istft(stft_signal)
+  
 class Voice_Dataset(Dataset):
     def __init__(self, source_voice_path, target_voice_path):
         self.source_voice_path = source_voice_path
