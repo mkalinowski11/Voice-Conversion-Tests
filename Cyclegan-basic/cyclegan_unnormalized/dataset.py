@@ -39,7 +39,7 @@ def fit_sound(wav, cutoff = CUTOFF):
 
 def complex_to_sound(stft_signal):
   return librosa.istft(stft_signal)
-  
+
 class Voice_Dataset(Dataset):
     def __init__(self, source_voice_path, target_voice_path):
         self.source_voice_path = source_voice_path

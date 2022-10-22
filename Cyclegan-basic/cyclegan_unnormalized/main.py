@@ -30,19 +30,15 @@ def main(config):
         load_checkpoint(
             disc_target, opt_disc, config, config.CHECKPOINT_DISC_TARGET
         )
-        print("tak")
         load_checkpoint(
             disc_source, opt_disc, config, config.CHECKPOINT_TRG_SRC
         )
-        print("tak")
         load_checkpoint(
             gen_source_target, opt_gen, config, config.CHECKPOINT_GEN_TARGET
         )
-        print("tak")
         load_checkpoint(
             gen_target_source, opt_gen, config, config.CHECKPOINT_GEN_SRC
         )
-        print("tak")
 
     L1 = nn.L1Loss()
     mse = nn.MSELoss()
@@ -62,7 +58,7 @@ def main(config):
     for epoch in range(config.CURRENT_EPOCH, config.NUM_EPOCHS):
         print("epoch", epoch)
         train_fn(disc_target, disc_source, gen_source_target, gen_target_source, loader, opt_disc, opt_gen, L1, mse, d_scaler, g_scaler, config)
-        if epoch % 2 == 0 and epoch != 0:
+        if epoch % 100 == 0 and epoch != 0:
           save_checkpoint(disc_target, opt_disc, config, filename=os.path.join(config.MODELS_PATH, f'disc_target{epoch}.pth'))
           save_checkpoint(disc_source, opt_disc, config, filename=os.path.join(config.MODELS_PATH, f'disc_source{epoch}.pth'))
           save_checkpoint(gen_target_source, opt_gen, config, filename=os.path.join(config.MODELS_PATH, f'disc_gen_source{epoch}.pth'))
