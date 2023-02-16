@@ -17,6 +17,6 @@ class Config:
         self.CHECKPOINT_DISC_TARGET = None
         self.CHECKPOINT_TRG_SRC = None
         #
-        self.SRC_VOICE_PATH = os.path.join("..", "data", "voices_unzip", "speaker2")
-        self.TARGET_VOICE_PATH = os.path.join("..", "data", "voices_unzip", "speaker3")
-        self.MODELS_PATH = ""
+        self.SRC_VOICE_PATH = os.path.join("..", "..", "..", "..", "data", "voices_unzip", "speaker2")
+        self.TARGET_VOICE_PATH = os.path.join("..", "..", "..", "..", "data", "voices_unzip", "speaker3")
+        self.MODELS_PATH = "models"
