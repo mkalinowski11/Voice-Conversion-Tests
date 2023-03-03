@@ -60,8 +60,6 @@ class Discriminator(nn.Module):
         output = torch.sigmoid(self.outputConvLayer(downsample3))
         return output
 
-# previous discriminator
-
 # class Block(nn.Module):
 #     def __init__(self, in_channels, out_channels, stride):
 #         super().__init__()
