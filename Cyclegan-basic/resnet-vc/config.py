@@ -28,3 +28,4 @@ class Config:
         self.TARGET_VOICE_PATH = os.path.join("..","..", "data", "data", "speaker3")
         self.MODELS_PATH = "model-save-dir"
         self.SAVE_FREQ = 100
+        self.SAVE_MODEL_ON_EPOCHS = [50, 100, 150, 200, 300]
