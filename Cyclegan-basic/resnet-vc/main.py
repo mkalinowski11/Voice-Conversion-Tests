@@ -83,7 +83,6 @@ def main(config):
                 "Disc_loss_B"
             ])
             dataframe.to_csv(f"metrics_on_epoch_{epoch_idx + 1}.csv")
-            
 
 if __name__ == "__main__":
     config = Config()
