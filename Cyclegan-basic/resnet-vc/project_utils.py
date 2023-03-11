@@ -1,12 +1,23 @@
 import torch
 import librosa
 import numpy as np
+import copy
+from scipy import signal
+import torch.nn.functional as F
 
-CUTOFF = 64000
-SPECT_CUTOFF = 501
-EPS=1e-6
-RANDOM_SIGNAL_LEVEL_DB = -40.0
 SAMPLE_RATE = 16000
+FRAME_SHIFT = 0.0125
+FRAME_LENGTH = 0.05
+TOP_DB = 15
+PREEMHPASIS = 0.97
+N_FFT = 2048
+HOP_LENGTH = int(SAMPLE_RATE*FRAME_SHIFT)
+WIN_LENTGH = int(SAMPLE_RATE*FRAME_LENGTH)
+N_MELS = 512
+REF_DB = 20
+MAX_DB = 100
+N_GRIFFIN_LIM_ITER = 100
+FRAME_SIZE = 1
 
 def save_checkpoint(model, optimizer, config, filename="my_checkpoint.pth"):
     print("=> Saving checkpoint")
@@ -25,37 +36,97 @@ def load_checkpoint(model, optimizer, config, filename="my_checkpoint.pth"):
   for param_group in optimizer.param_groups:
         param_group["lr"] = config.LEARNING_RATE
 
-def preprocess_sound(audio):
-    audio_stft = librosa.stft(audio, n_fft=512)
-    amplitude, phase = np.abs(audio_stft), np.angle(audio_stft)
-    return amplitude, phase
+def _mel_to_linear_matrix(sr, n_fft, n_mels):
+    m = librosa.filters.mel(sr = sr, n_fft = n_fft,n_mels = n_mels)
+    m_t = np.transpose(m)
+    p = np.matmul(m, m_t)
+    d = [1.0 / x if np.abs(x) > 1.0e-8 else x for x in np.sum(p, axis=0)]
+    return np.matmul(m_t, np.diag(d))
 
-def convert_to_complex(amplitude, phase):
-    return amplitude * np.vectorize(complex)(np.cos(phase), np.sin(phase))
+def invert_spectrogram(spectrogram):
+    '''
+    spectrogram: [f, t]
+    '''
+    return librosa.istft(spectrogram, hop_length = HOP_LENGTH, win_length=WIN_LENTGH, window="hann")
 
-def amp_to_decibel(S, ref = 1.0):
-    #return 10 * np.log10( (S + EPS)  / ref)
-    return 10 * np.log10( (S)  / ref)
+def griffin_lim(spectrogram):
+    X_best = copy.deepcopy(spectrogram)
+    for i in range(N_GRIFFIN_LIM_ITER):
+        X_t = invert_spectrogram(X_best)
+        est = librosa.stft(X_t, n_fft = N_FFT, hop_length = HOP_LENGTH, win_length = WIN_LENTGH)
+        phase = est / np.maximum(1e-8, np.abs(est))
+        X_best = spectrogram * phase
+    X_t = invert_spectrogram(X_best)
+    y = np.real(X_t)
+    return y
 
-def decibel_revert(db):
-    return 10 ** (db / 10)
+def get_spectrograms(fpath):
+    y, sr = librosa.load(fpath, sr=SAMPLE_RATE)
+    y, _ = librosa.effects.trim(y, top_db=TOP_DB)
+    y = np.append(y[0], y[1:] - PREEMHPASIS * y[:-1])
+    # stft
+    linear = librosa.stft(y=y,
+                          n_fft=N_FFT,
+                          hop_length=HOP_LENGTH,
+                          win_length=WIN_LENTGH)
 
-def signal_pad(signal, fixed_length = CUTOFF, noise_level = RANDOM_SIGNAL_LEVEL_DB):
-    pad_length = fixed_length - signal.shape[0]
-    pad = (np.random.rand(pad_length) - 0.5) * 2 * decibel_revert(noise_level)
-    sound_extended = np.concatenate((signal, pad), axis=0)
-    return sound_extended
+    mag = np.abs(linear)
+    # mel spectrogram
+    mel_basis = librosa.filters.mel(sr=SAMPLE_RATE, n_fft=N_FFT, n_mels=N_MELS)
+    mel = np.dot(mel_basis, mag)
 
-def fit_sound(wav, cutoff = CUTOFF):
-    if wav.shape[0] < cutoff:
-        signal_padding = signal_pad(wav, fixed_length = cutoff)
-        return signal_padding
-    return wav[:cutoff]
+    # to decibel
+    mel = 20 * np.log10(np.maximum(1e-5, mel))
 
-def normalize(spect):
-    spect_mean, spect_std = spect.mean(), spect.std()
-    spect_normalized = (spect - spect_mean) / spect_std
-    return spect_normalized, spect_mean, spect_std
+    # normalize
+    mel = np.clip((mel - REF_DB + MAX_DB) / MAX_DB, 1e-8, 1)
 
-def denormalize(spect, spect_mean, spect_std):
-    return spect * spect_std + spect_mean
+    # Transpose
+    mel = mel.T.astype(np.float32)
+
+    return mel
+
+def melspectrogram2wav(mel):
+    mel = mel.T
+    # de-noramlize
+    mel = (np.clip(mel, 0, 1) * MAX_DB) - MAX_DB + REF_DB
+
+    # to amplitude
+    mel = np.power(10.0, mel * 0.05)
+    m = _mel_to_linear_matrix(SAMPLE_RATE, N_FFT, N_MELS)
+    mag = np.dot(m, mel)
+    # wav reconstruction
+    wav = griffin_lim(mag)
+    # de-preemphasis
+    wav = signal.lfilter([1], [1, -PREEMHPASIS], wav)
+    # trim
+    wav, _ = librosa.effects.trim(wav)
+    return wav.astype(np.float32)
+
+def wave_feature_extraction(wav_file, sr):
+    y, sr = librosa.load(wav_file, sr)
+    y, _ = librosa.effects.trim(y, top_db=20)
+    return y
+
+def spec_feature_extraction(wav_file):
+    mel = get_spectrograms(wav_file)
+    return mel
+
+def utt_make_frames(x, frame_size = FRAME_SIZE):
+    remains = x.size(0) % frame_size
+    if remains != 0:
+        x = F.pad(x, (0, remains))
+    out = x.view(1, x.size(0) // frame_size, frame_size * x.size(1)).transpose(1, 2)
+    return out
+
+def normalize(x, mean, std):
+    ret = (x - mean) / std
+    return ret
+
+def add_padding(x, expected_size = 256):
+    if x.shape[0] >= expected_size:
+        return x[:expected_size, :]
+    else:
+        padding_len = expected_size - x.shape[0]
+        padding = np.zeros((padding_len, x.shape[1]))
+        return np.concatenate((x, padding), axis = 0)
