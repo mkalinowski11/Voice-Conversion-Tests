@@ -65,10 +65,8 @@ def main(config):
             config
         )
         if epoch_idx % config.SAVE_FREQ and epoch_idx != 0:
-            save_checkpoint(disc_trg, discr_optimizer, filename=os.path.join(config.MODELS_PATH, f'disc_target{epoch_idx}.pth'))
-            save_checkpoint(disc_src, discr_optimizer, filename=os.path.join(config.MODELS_PATH, f'disc_source{epoch_idx}.pth'))
-            save_checkpoint(generator_src_trg, gen_optimizer, filename=os.path.join(config.MODELS_PATH, f'gen_src_trg{epoch_idx}.pth'))
-            save_checkpoint(generator_trg_src, gen_optimizer, filename=os.path.join(config.MODELS_PATH, f'gen_trg_src{epoch_idx}.pth'))
+            save_checkpoint(generator_src_trg, gen_optimizer, config, filename=os.path.join(config.MODELS_PATH, f'gen_src_trg{epoch_idx}.pth'))
+            save_checkpoint(generator_trg_src, gen_optimizer, config, filename=os.path.join(config.MODELS_PATH, f'gen_trg_src{epoch_idx}.pth'))
 
 if __name__ == "__main__":
     config = Config()
