@@ -74,7 +74,7 @@ class Generator(nn.Module):
                 ConvBlockUp(in_channels = 2*num_features, out_channels = num_features, kernel_size = 3, stride = 2, padding = (1,1))
             ]
         )
-        self.out_layer = nn.Conv2d(in_channels = num_features, out_channels = channels, kernel_size=7, stride=1, padding=(3,3), padding_mode="reflect")
+        self.out_layer = nn.Conv2d(in_channels = num_features, out_channels = channels, kernel_size=4, stride=1, padding=(3,3), padding_mode="reflect")
   
     def forward(self, x):
         x = self.initial(x)

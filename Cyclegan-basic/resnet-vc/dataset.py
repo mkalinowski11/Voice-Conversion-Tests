@@ -29,6 +29,7 @@ class Voice_Dataset(Dataset):
     def __prepare_dataset(self):
         src_mels = []
         trg_mels = []
+        print("start preparing dataset")
         for voice in self.source_voices:
             mel = get_spectrograms(os.path.join(self.source_voice_path, voice))
             mel = add_padding(mel, self.target_mel_height)
@@ -44,6 +45,7 @@ class Voice_Dataset(Dataset):
         # Normalization
         src_mels = (src_mels - mean) / std
         trg_mels = (trg_mels - mean) / std
+        print("finished preparing dataset")
         return src_mels, trg_mels, mean, std
         
     def shuffle_ids(self):
@@ -54,4 +56,5 @@ class Voice_Dataset(Dataset):
 
     def __getitem__(self, index):
         sequence_idx = self.ids[index]
-        return torch.tensor(self.src_mels[sequence_idx]).unsqueeze(0), torch.tensor(self.trg_mels[sequence_idx]).unsqueeze(0)
+        return torch.tensor(self.src_mels[sequence_idx]).unsqueeze(0).to(torch.float32),\
+                torch.tensor(self.trg_mels[sequence_idx]).unsqueeze(0).to(torch.float32)
