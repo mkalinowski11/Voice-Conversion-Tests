@@ -11,7 +11,8 @@ def train_step(
         disc_optimizer,
         g_scaler,
         d_scaler,
-        config
+        config,
+        metrics = []
 ):
     loop = tqdm(train_loader, leave=True)
     # trainloader need to be tqdm style
@@ -91,6 +92,14 @@ def train_step(
         d_scaler.scale(d_loss).backward()
         d_scaler.step(disc_optimizer)
         d_scaler.update()
+        # adding metrics after train step
+        metrics.append(
+                (
+                    generator_loss.item(), d_loss.item(), generator_loss_A2B.item(), \
+                    generator_loss_B2A.item(), identity_loss.item(), cycleLoss.item(), \
+                    d_loss_A.item(), d_loss_B.item()
+                )
+            )
         loop.set_postfix(
                             Gen_loss=generator_loss.item(),
                             Disc_loss = d_loss.item(),

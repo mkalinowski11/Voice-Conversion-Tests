@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from train_step import train_step
 import os
 from config import Config
+import pandas as pd
 
 def main(config):
     generator_src_trg = Generator(channels=1, num_residuals=9).to(config.DEVICE)
@@ -14,6 +15,8 @@ def main(config):
     disc_src = Discriminator().to(config.DEVICE)
     disc_trg = Discriminator().to(config.DEVICE)
     
+    metrics = []
+
     gen_optimizer = torch.optim.Adam(
         list(generator_src_trg.parameters()) + list(generator_trg_src.parameters()),
         lr=config.GEN_LR,
@@ -62,11 +65,24 @@ def main(config):
             discr_optimizer,
             g_scaler,
             d_scaler,
-            config
+            config,
+            metrics
         )
-        if epoch_idx % config.SAVE_FREQ and epoch_idx != 0:
+
+        if epoch_idx + 1 in config.SAVE_MODEL_ON_EPOCHS:
             save_checkpoint(generator_src_trg, gen_optimizer, config, filename=os.path.join(config.MODELS_PATH, f'gen_src_trg{epoch_idx}.pth'))
             save_checkpoint(generator_trg_src, gen_optimizer, config, filename=os.path.join(config.MODELS_PATH, f'gen_trg_src{epoch_idx}.pth'))
+            dataframe = pd.DataFrame(metrics, columns = [
+                "Gen_loss",
+                "Disc_loss",
+                "Gen_loss_a2b",
+                "Gen_loss_b2a",
+                "Identity_loss",
+                "Cycle_loss",
+                "Disc_loss_A",
+                "Disc_loss_B"
+            ])
+            dataframe.to_csv(f"metrics_on_epoch_{epoch_idx + 1}.csv")
 
 if __name__ == "__main__":
     config = Config()
