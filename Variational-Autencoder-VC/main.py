@@ -40,11 +40,11 @@ def main(config):
         loss_kl = meta['loss_kl']
 
         pbar.set_description(f"AE: {iteration + 1}/{n_iterations}, loss_rec={loss_rec:.2f}, 'f'loss_kl={loss_kl:.2f}, lambda={lambda_kl:.1e}")
-        
-        if (iteration + 1) % config["save_frequency"] or (iteration + 1) == n_iterations:
+
+        if (iteration + 1) % config["save_frequency"] == 0 or (iteration + 1) == n_iterations:
             save_model(model, optimizer, iteration)
 
 if __name__ == "__main__":
     with open(CONFIG_PATH, "r") as file:
-        config = json.load()
+        config = json.load(file)
     main(config)

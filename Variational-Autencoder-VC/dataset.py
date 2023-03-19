@@ -10,14 +10,16 @@ class Voice_Dataset(Dataset):
         self.data = self.__prepare_dataset(dataset_path)
         self.data_mean = self.__get_mean()
         self.data_std = self.__get_std()
+        print(f"finished data preparation, dataset len: {len(self)}")
     
     def __prepare_dataset(self, dataset_path):
         voices = []
         for root, _, files in os.walk(dataset_path, topdown=False):
             for filename in files:
                 voice_path = os.path.join(root, filename)
-                mel = get_spectrograms(voice_path)
-                voices.append(mel)
+                if voice_path.endswith(".wav"):
+                    mel = get_spectrograms(voice_path)
+                    voices.append(mel)
         voices = np.vstack(voices)
         return voices
     
