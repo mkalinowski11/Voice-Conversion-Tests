@@ -8,12 +8,14 @@ from auto_vc_utils import infinite_iter, save_model
 from train_step import train_step
 import json
 from tqdm import tqdm
+import pandas as pd
 
 CONFIG_PATH = "config.json"
 
 def main(config):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     model = AE(config).to(DEVICE)
+    train_metrics = []
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config["optimizer"]['lr'],
         betas=(config["optimizer"]['beta1'], config["optimizer"]['beta2']), 
@@ -38,11 +40,13 @@ def main(config):
         meta = train_step(model, optimizer, data, criterion, lambda_kl, config)
         loss_rec = meta['loss_rec']
         loss_kl = meta['loss_kl']
-
+        train_metrics.append((loss_rec, loss_kl))
         pbar.set_description(f"AE: {iteration + 1}/{n_iterations}, loss_rec={loss_rec:.2f}, 'f'loss_kl={loss_kl:.2f}, lambda={lambda_kl:.1e}")
 
         if (iteration + 1) % config["save_frequency"] == 0 or (iteration + 1) == n_iterations:
             save_model(model, optimizer, iteration)
+            dataframe = pd.DataFrame(train_metrics, columns=["loss_rec", "loss_kl"])
+            dataframe.to_csv(f"metrics_on_epoch_{iteration + 1}.csv")
 
 if __name__ == "__main__":
     with open(CONFIG_PATH, "r") as file:
