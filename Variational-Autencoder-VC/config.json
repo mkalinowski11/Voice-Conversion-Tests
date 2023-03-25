@@ -77,5 +77,5 @@
     "annealing_iters": 20000,
     "dataset_path": "../data/data",
     "n_iterations": 20000,
-    "save_frequency": 1500
+    "save_frequency": 2500
 }
