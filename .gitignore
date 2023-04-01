@@ -4,3 +4,5 @@
 *.zip
 *.csv
 *.ckpt
+*.pth
+*.opt
