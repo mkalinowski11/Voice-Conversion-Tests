@@ -4,7 +4,7 @@ from tqdm import tqdm
 import json
 from model import DisentangledVAE
 from dataset import Voice_Dataset
-from vc_utils import loss_functionGVAE2,train_step,save_model
+from vc_utils import loss_functionGVAE2,train_step
 from torch.utils.data import DataLoader
 
 CONFIG_PATH = "config.json"
@@ -12,7 +12,7 @@ CONFIG_PATH = "config.json"
 def main(config):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     dataset = Voice_Dataset(config["dataset_path"])
-    model = DisentangledVAE(config["speaker_size"])
+    model = DisentangledVAE(config["speaker_size"]).to(DEVICE)
     loss = loss_functionGVAE2
     train_loader = DataLoader(dataset, batch_size = config["batch_size"], shuffle=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
@@ -57,7 +57,6 @@ def main(config):
                 total_z_style_kl = total_z_style_kl
             )
         if (epoch_idx + 1) % config["save_freq"] or (epoch_idx + 1) == config["n_epochs"]:
-            save_model(model, optimizer, )
             torch.save(model.state_dict(), f"model_save_epoch{epoch_idx + 1}.pth")
             torch.save(optimizer.state_dict(), f"optimizer_save_epoch{epoch_idx + 1}.opt")
             dataframe = pd.DataFrame(metrics, columns = [
