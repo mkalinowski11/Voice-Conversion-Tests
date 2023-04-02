@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 import json
 from model import DisentangledVAE
-from dataset import Voice_Dataset
+from dataset import DisentagleVAEDataset
 from vc_utils import loss_functionGVAE2,train_step
 from torch.utils.data import DataLoader
 
@@ -11,9 +11,9 @@ CONFIG_PATH = "config.json"
 
 def main(config):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    dataset = Voice_Dataset(config["dataset_path"])
-    model = DisentangledVAE(config["speaker_size"]).to(DEVICE)
-    loss = loss_functionGVAE2
+    dataset = DisentagleVAEDataset(config["dataset_path"])
+    model = DisentangledVAE(config["speaker_size"], device = DEVICE).to(DEVICE)
+    model_loss = loss_functionGVAE2
     train_loader = DataLoader(dataset, batch_size = config["batch_size"], shuffle=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
    
@@ -27,11 +27,10 @@ def main(config):
         metrics = []
         
         for batch_idx, (data1, data2) in enumerate(loop):
-            data1 = data1.to(torch.device(DEVICE))
-            data2 = data2.to(torch.device(DEVICE))
+            data1 = data1.to(DEVICE)
+            data2 = data2.to(DEVICE)
             
-            loss, recons_loss1, recons_loss2,recons_loss1_hat, recons_loss2_hat, z1_kl_loss, z2_kl_loss, z_style_kl = train_step(model, optimizer, loss, data1, config)
-            
+            loss, recons_loss1, recons_loss2, recons_loss1_hat, recons_loss2_hat, z1_kl_loss, z2_kl_loss, z_style_kl = train_step(model, optimizer, model_loss, data1, data2, config)
             train_loss += loss
             total_recons_loss1 += recons_loss1
             total_recons_loss2 += recons_loss2

@@ -29,7 +29,7 @@ class DisentagleVAEDataset(Dataset):
         mel2 = get_spectrograms(voice_path2)
         
         mel1, mel2 = self.__add_padding(mel1, self.target_len), self.__add_padding(mel2, self.target_len)
-        return torch.tensor(mel1).to(torch.float32).view(-1, self.target_len), torch.tensor(mel2).to(torch.float32).view(-1, self.target_len)
+        return torch.tensor(mel1).to(torch.float32).reshape(-1, self.target_len), torch.tensor(mel2).to(torch.float32).reshape(-1, self.target_len)
     
     def __add_padding(self, x, target_len = 128):
         shape = x.shape

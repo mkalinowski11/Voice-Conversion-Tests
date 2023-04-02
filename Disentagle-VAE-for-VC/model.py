@@ -99,7 +99,7 @@ class DisentangledVAE(nn.Module):
                 c_delta: float = 0.001,
                 beta: float = 0.1,
                 beta_delta: float = 0,
-                dim_neck=64, latent_dim=64, dim_pre=512, batch_size=10):
+                dim_neck=64, latent_dim=64, dim_pre=512, batch_size=10, device = None):
         super(DisentangledVAE, self).__init__()
 
         self.batch_size = batch_size
@@ -114,7 +114,7 @@ class DisentangledVAE(nn.Module):
         self.dim_neck = dim_neck
         self.speaker_size = speaker_size
         self.postnet = Postnet()
-
+        self.device = device
         ############################## Encoder Architecture ###################
         self.enc_modules = []
         for i in range(3):
@@ -185,7 +185,7 @@ class DisentangledVAE(nn.Module):
 
     def _reparameterize(self, mu, logvar, train=True):
         if train:
-            epsilon = torch.autograd .Variable(torch.empty(logvar.size()).normal_())
+            epsilon = torch.autograd .Variable(torch.empty(logvar.size()).normal_()).to(self.device)
             std = logvar.mul(0.5).exp_()
             return epsilon.mul(std).add_(mu)
         else:
