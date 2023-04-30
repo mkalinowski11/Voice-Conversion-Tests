@@ -30,7 +30,8 @@ def main(config):
         embed_dim = config["model"]["embed_dim"],
         num_heads = config["model"]["num_heads"],
         n_enc_blcks = config["model"]["n_enc_blcks"],
-        n_dec_blcks = config["model"]["n_dec_blcks"]
+        n_dec_blcks = config["model"]["n_dec_blcks"],
+        device = DEVICE
     )
     optimizer = torch.optim.Adam(
         transformer_model.parameters(), lr=config["optimizer"]['lr'],

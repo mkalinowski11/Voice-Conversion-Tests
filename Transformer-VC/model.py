@@ -26,11 +26,11 @@ class EncoderBlock(nn.Module):
         return out
 
 class Encoder(nn.Module):
-    def __init__(self, embed_dim, num_heads, n_enc_blcks = 9):
+    def __init__(self, embed_dim, num_heads, n_enc_blcks = 9, device = "cpu"):
         super(Encoder, self).__init__()
         self.mha_list = nn.ModuleList([
             EncoderBlock(embed_dim = embed_dim, num_heads = num_heads) for _ in range(n_enc_blcks)
-        ])
+        ]).to(device)
     
     def forward(self, x):
         out = self.mha_list[0](x)
@@ -70,11 +70,11 @@ class DecoderBlock(nn.Module):
         return out
 
 class Decoder(nn.Module):
-    def __init__(self, embed_dim, num_heads, n_dec_blcks = 6):
+    def __init__(self, embed_dim, num_heads, n_dec_blcks = 6, device = "cpu"):
         super(Decoder, self).__init__()
         self.decoder_list = nn.ModuleList([
             DecoderBlock(embed_dim = embed_dim, num_heads = num_heads) for _ in range(n_dec_blcks)
-        ])
+        ]).to(device)
 
     def forward(self, x, encoded_x):
         for decoder_blck in self.decoder_list:
@@ -82,10 +82,10 @@ class Decoder(nn.Module):
         return x
 
 class TransformerModel(nn.Module):
-    def __init__(self, embed_dim, num_heads, n_enc_blcks = 9, n_dec_blcks = 9):
+    def __init__(self, embed_dim, num_heads, n_enc_blcks = 9, n_dec_blcks = 9, device = "cpu"):
         super(TransformerModel, self).__init__()
-        self.encoder = Encoder(embed_dim=embed_dim, num_heads=num_heads, n_enc_blcks=n_enc_blcks)
-        self.decoder = Decoder(embed_dim=embed_dim, num_heads=num_heads, n_dec_blcks=n_dec_blcks)
+        self.encoder = Encoder(embed_dim=embed_dim, num_heads=num_heads, n_enc_blcks=n_enc_blcks, device = device)
+        self.decoder = Decoder(embed_dim=embed_dim, num_heads=num_heads, n_dec_blcks=n_dec_blcks, device = device)
     
     def forward(self, x_src, x_trg):
         enc_out = self.encoder(x_src)
