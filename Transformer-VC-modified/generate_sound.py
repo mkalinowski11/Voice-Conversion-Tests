@@ -7,15 +7,15 @@ from transformer_utils import load_wave, convert_to_complex, to_decibel, decibel
 import json
 import soundfile as sf
 
-MODEL_PATH = "model_save_iter_100000.ckpt"
+MODEL_PATH = "model_save_iter_10000.ckpt"
 SOURCE_SPEECH = os.path.join("..", "data", "data", "speaker2", "arctic_a0010.wav")
 TARGET_SPEECH = os.path.join("..", "data", "data", "speaker3", "arctic_a0010.wav")
 
 CONFIG_PATH = "config.json"
 
 CONVERSION_PATH = "conversions"
-CONVERSION1_PATH = os.path.join(CONVERSION_PATH, "male_to_fem.wav")
-CONVERSION2_PATH = os.path.join(CONVERSION_PATH, "fem_to_male.wav")
+CONVERSION1_PATH = os.path.join(CONVERSION_PATH, "src_to_trg.wav")
+CONVERSION2_PATH = os.path.join(CONVERSION_PATH, "trg_to_src.wav")
 
 if __name__ == "__main__":
     with open(CONFIG_PATH, "r") as file:
@@ -46,21 +46,21 @@ if __name__ == "__main__":
 
     normalized_source = torch.from_numpy(normalized_source_amp).T
     normalized_target = torch.from_numpy(normalized_target_amp).T
-    print(normalized_source.shape)
-    print(normalized_target.shape)
+    # Get min size of stft's
+    samples_min_len = normalized_source.shape[0] if normalized_source.shape[0] < normalized_target.shape[0] else normalized_target.shape[0]
 
     with torch.no_grad():
-        male_to_fem = model(normalized_source, normalized_target[:normalized_source.shape[0], :])
-        fem_to_male = model(normalized_target, normalized_target)
+        src_to_trg = model(normalized_source[:samples_min_len, :], normalized_target[:samples_min_len, :])
+        trg_to_src = model(normalized_target[:samples_min_len, :], normalized_source[:samples_min_len, :])
     
-    src_conversion_amp = (male_to_fem.numpy().T * std) + mean
-    trg_conversion_amp = (fem_to_male.numpy().T * std) + mean
+    src_conversion_amp = (src_to_trg.numpy().T * std) + mean
+    trg_conversion_amp = (trg_to_src.numpy().T * std) + mean
 
     src_conversion_amp = decibel_revert(src_conversion_amp)
     trg_conversion_amp = decibel_revert(trg_conversion_amp)
-
-    src_conversion = convert_to_complex(src_conversion_amp, source_phase)
-    trg_conversion = convert_to_complex(trg_conversion_amp, target_phase)
+    print(source_phase.shape, samples_min_len)
+    src_conversion = convert_to_complex(src_conversion_amp, source_phase[:, :samples_min_len])
+    trg_conversion = convert_to_complex(trg_conversion_amp, target_phase[:, :samples_min_len])
 
     src_conversion = librosa.istft(src_conversion)
     trg_conversion = librosa.istft(trg_conversion)
