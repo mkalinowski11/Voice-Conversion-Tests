@@ -1,0 +1,20 @@
+{
+    "model": {
+        "embed_dim": 1025,
+        "num_heads": 5,
+        "n_enc_blcks": 9,
+        "n_dec_blcks": 6
+    },
+    "optimizer": {
+        "lr": 1e-4,
+        "beta1": 0.9,
+        "beta2": 0.98,
+        "weight_decay": 0.0001
+    },
+    "dataset_path": "../data/data",
+    "data_loader": {
+        "batch_size": 16
+    },
+    "n_iterations": 40000,
+    "save_frequency": 10000
+}
