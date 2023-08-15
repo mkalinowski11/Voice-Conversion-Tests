@@ -41,7 +41,7 @@
     "optimizer": {
         "lr": 0.0005,
         "beta1": 0.9,
-        "beta2": 0.999,
+        "beta2": 0.98,
         "amsgrad": true,
         "weight_decay": 0.0001,
         "grad_norm": 5
@@ -53,8 +53,8 @@
     "data_loader": {
         "batch_size": 8
     },
-    "annealing_iters": 20000,
+    "annealing_iters": 25000,
     "dataset_path": "../data/data",
-    "n_iterations": 20000,
-    "save_frequency": 2500
+    "n_iterations": 120000,
+    "save_frequency": 40000
 }

@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import numpy as np
 from torch.nn.utils import spectral_norm
 
-
 def pad_layer(inp, layer, pad_type='reflect'):
     kernel_size = layer.kernel_size[0]
     if kernel_size % 2 == 0:
@@ -80,18 +79,18 @@ class Inception(nn.Module):
         self.block2 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size = (1, 1)),
             nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size = (3,3), padding = (1,1), padding_mode = "reflect"),
+            nn.Conv2d(out_channels, out_channels, kernel_size = (1,3), padding = (0,1), padding_mode = "reflect"),
             nn.ReLU()
         )
         self.block3 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size = (1, 1)),
             nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size = (5, 5), padding = (2, 2), padding_mode = "reflect"),
+            nn.Conv2d(out_channels, out_channels, kernel_size = (1, 5), padding = (0, 2), padding_mode = "reflect"),
             nn.ReLU()
         )
         self.block4 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=(3,3), stride=(1,1), padding=(1,1)),
-            nn.Conv2d(in_channels, out_channels, kernel_size = (1, 1), padding_mode = "reflect"),
+            nn.MaxPool2d(kernel_size=(3,1), stride=(1,1)),
+            nn.Conv2d(in_channels, out_channels, kernel_size = (1, 1), padding=(1,0), padding_mode = "reflect"),
             nn.ReLU()
         )
 
@@ -102,110 +101,77 @@ class Inception(nn.Module):
         x4 = self.block4(x)
         return torch.cat([x1,x2, x3,x4], axis = 1)
 
-class InceptionExtractor(nn.Module):
-    def __init__(self):
-        super(InceptionExtractor, self).__init__()
-        self.inception1 = Inception(1, 16)# output shape [None,512, 512, 200 - dim len]
-        self.inception2 = Inception(64, 32)# output shape [None, 128, 512, 200 - dim len]
-        self.inception3 = Inception(128, 64)# output shape [None, 32, 512, 200 - dim len]
-        self.pool1 = nn.AdaptiveAvgPool2d((None, 1))
-        self.pool2 = nn.AdaptiveAvgPool2d((None, 1))
-        self.pool3 = nn.AdaptiveAvgPool2d((None, 1))
-        self.pool4 = nn.AdaptiveAvgPool2d((None, 1))
+class ReduceBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        mid_channel_size = (in_channels + out_channels) // 2
+        self.conv1 = nn.Conv2d(
+            in_channels = in_channels,
+            out_channels = mid_channel_size,
+            kernel_size = (3,3)
+        )
+        self.conv2 = nn.Conv2d(
+            in_channels = mid_channel_size,
+            out_channels = 1,# returns only 1 channel data
+            kernel_size = (3,3)
+        )
+        self.out_conv = nn.Conv1d(
+            in_channels = 508,
+            out_channels = out_channels,
+            kernel_size = 5
+        )
+        self.pool_layer = nn.AdaptiveAvgPool1d(1)
+        # regarding to the paper, some linear layers can be added
     
     def forward(self, x):
-        input_shape = x.shape
-        # [None, 1, 512, 200] -> [None, 1, 200, 512]
-        pool1 = x.reshape(input_shape[0], input_shape[1], input_shape[3], input_shape[2])
-        pool1 = self.pool1(pool1)
-        # 1 inception block
-        inc_1_res = self.inception1(x)
-        # [None, 1, 512, 512, 200] -> [None, 1, 512, 200, 512]
-        pool2 = inc_1_res.reshape(inc_1_res.shape[0], inc_1_res.shape[1], inc_1_res.shape[3], inc_1_res.shape[2])
-        pool2 = self.pool2(pool2)
-        # 2 inception block
-        inc_2_res = self.inception2(inc_1_res)
-        # [None, 128, 512, 200] -> [None, 128, 200, 512]
-        pool3 = inc_2_res.reshape(inc_2_res.shape[0], inc_2_res.shape[1], inc_2_res.shape[3], inc_2_res.shape[2])
-        pool3 = self.pool3(pool3)
-        # 3 inception block
-        inc_3_res = self.inception3(inc_2_res)
-        # [None, 32, 512, 200] -> [None, 32, 200, 512]
-        pool4 = inc_3_res.reshape(inc_3_res.shape[0], inc_3_res.shape[1], inc_3_res.shape[3], inc_3_res.shape[2])
-        pool4 = self.pool4(pool4)
-        # pool concatenation
-        pool_concat = torch.cat([pool1, pool2, pool3, pool4], axis = 1).squeeze(3)
-        return pool_concat, inc_3_res
+        result = F.relu(self.conv1(x))
+        result = F.relu(self.conv2(result)).squeeze(1)
+        result = F.relu(self.out_conv(result))
+        return self.pool_layer(result).squeeze(2)
 
-class InceptionSpeakerEnc(nn.Module):
-    def __init__(self):
-        super(InceptionSpeakerEnc, self).__init__()
-        self.inception_extractor = InceptionExtractor()
-        self.conv_extractor = nn.Sequential(
-            nn.MaxPool2d((4, 2)),
-            nn.Conv2d(256, 128, kernel_size = (5,5)),
-            nn.ReLU(),
-            nn.LayerNorm((124,96)),
-            nn.MaxPool2d((2, 2)),
-            nn.Conv2d(128, 128, kernel_size = (3,3)),
-            nn.ReLU(),
-            nn.LayerNorm((60, 46)),
-            nn.MaxPool2d((2, 2)),
-            nn.Conv2d(128,128, kernel_size = (3,1)),
-            nn.ReLU(),
-            nn.LayerNorm((28, 23)),
-            nn.MaxPool2d((2, 2)),
-            nn.Conv2d(128,128, kernel_size = (3,3)),
-            nn.ReLU(),
-            nn.Conv2d(128,128, kernel_size = (4,1)),
-            nn.ReLU()
+class LinearBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, n_linears = 3):
+        super().__init__()
+        self.n_linears = n_linears - 1
+        self.input_linear = nn.Linear(
+            in_features = in_channels,
+            out_features = out_channels
         )
-        self.pool_linear_extract = nn.ModuleList([
-                nn.Linear(449, 200),
-                nn.Linear(200, 64),
-                nn.Linear(12800, 512)
-            ]
-        )
-        self.conv_linear_extract = nn.Sequential(
-            nn.Linear(10368, 1024),
-            nn.ReLU(),
-            nn.Dropout(p=0.3),
-            nn.Linear(1024, 512),
-            nn.ReLU(),
-            nn.Dropout(p=0.3),
-        )
-        self.merge_linear = nn.Sequential(
-            nn.Linear(1024, 512),
-            nn.ReLU(),
-            nn.Dropout(p=0.3),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Dropout(p=0.3),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Dropout(p=0.3),
-        )
+        self.linears = nn.ModuleList([nn.Linear(out_channels, out_channels) for _ in range(self.n_linears)])
     
     def forward(self, x):
-        pool_x, inc_x = self.inception_extractor(x)
-        # pool layers feature extraction
-        pool_x = pool_x.reshape(pool_x.shape[0], pool_x.shape[2], pool_x.shape[1])
-        for layer in self.pool_linear_extract[:-1]:
-            pool_x = layer(pool_x)
-            pool_x = torch.relu(pool_x)
-            pool_x = F.dropout(pool_x, p = 0.3)
-        pool_x = pool_x.reshape(pool_x.shape[0], -1)
-        pool_x = self.pool_linear_extract[-1](pool_x)
-        pool_x = torch.relu(pool_x)
-        # conv layers feature extraction
-        inc_x = self.conv_extractor(inc_x)
-        inc_x = inc_x.reshape(inc_x.shape[0], 1, -1)
-        inc_x = self.conv_linear_extract(inc_x)
-        inc_x = inc_x.squeeze(1)
-        # merging
-        res_concat = torch.cat([pool_x, inc_x], axis = 1)
-        result = self.merge_linear(res_concat)
-        return result
+        output = F.relu(self.input_linear(x))
+        for module in self.linears:
+            output = F.relu(module(output))
+        return output
+
+class SpeakerEncoder(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.inception1 = Inception(1, 8)
+        self.inception2 = Inception(32, 16)
+        self.inception3 = Inception(64, 32)
+        # reduce blocks
+        self.reduce1 = ReduceBlock(32, 128)
+        self.reduce2 = ReduceBlock(64, 128)
+        self.reduce3 = ReduceBlock(128, 128)
+        # linear block
+        self.out_block = LinearBlock(384, 128)
+    
+    def forward(self, x):
+        # inception blocks processing
+        out_inc1 = self.inception1(x)
+        out_inc2 = self.inception2(out_inc1)
+        out_inc3 = self.inception3(out_inc2)
+        # reduce channels
+        reduce1 = self.reduce1(out_inc1)
+        reduce2 = self.reduce2(out_inc2)
+        reduce3 = self.reduce3(out_inc3)
+        # concatenation
+        out = torch.cat([reduce1, reduce2, reduce3], axis = 1)
+        # 
+        out = self.out_block(out)
+        return out
 
 class ContentEncoder(nn.Module):
     def __init__(self, c_in, c_h, c_out, kernel_size,
@@ -304,7 +270,7 @@ class Decoder(nn.Module):
 class AE(nn.Module):
     def __init__(self, config):
         super(AE, self).__init__()
-        self.speaker_encoder = InceptionSpeakerEnc()
+        self.speaker_encoder = SpeakerEncoder()
         self.content_encoder = ContentEncoder(**config['ContentEncoder'])
         self.decoder = Decoder(**config['Decoder'])
 
