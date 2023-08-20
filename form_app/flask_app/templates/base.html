@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://getbootstrap.com/docs/4.0/examples/starter-template/starter-template.css">
     <link rel="icon" href="https://getbootstrap.com/docs/4.0/assets/img/favicons/favicon.ico">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         button {
             margin: 5px;
@@ -14,21 +15,13 @@
 </head>
 
 <body>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        {% block project_info %}
-        {% endblock%}
+    {% block title %}
+    {% endblock %}
 
-        {% block content %}
-        {% endblock %}
-    </div>
+    {% block project_info %}
+    {% endblock%}
 
-    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
-        integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
-        crossorigin="anonymous"></script>
-
-    {% block scripts %}
+    {% block content %}
     {% endblock %}
 </body>
 
