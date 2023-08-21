@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='voice_style.css') }}">
+    {% block title %}<title>Master thesis form</title>{% endblock %}
+</head>
+
+<body class="container">
+    <div class="form_area">
+        <div>
+            <h4 class="title">{{ title }}</h4>
+        </div>
+        {% block project_info %}
+        <div>
+            <h4 class="info">Formularz ma na celu zebranie cennych danych do celów badawczych w ramach projektu
+                magisterskiego.
+                Twój udział w tym badaniu jest niezwykle ważny i pomoże w zgłębieniu tematu oraz uzyskaniu cennych
+                wniosków.
+                Celem jest porównanie trzech różnych metod w kontekście jakości konwersji barwy głosu oraz naturalności
+                rozwiązań.
+                Posłuchaj nagrań głosowych z wykorzystaniem oryginalnego głosu oraz przekonwertowanego.
+                Oceń jakość tych nagrań, przypisując im odpowiednią wartość na skali od 1 do 5, gdzie 1 oznacza
+                najniższą
+                jakość, a 5 oznacza najwyższą jakość.
+            </h4>
+        </div>
+        {% endblock %}
+        <div>
+            <form method='POST'>
+                {% for element in speaker_data %}
+                <div class="voice_samples">
+                    {% for audio in samples %}
+                    <audio id="audioPlayer" class='audio' controls>
+                        <source src={{url_for('static', filename='/' .join(['voice_data', element , audio]))}}
+                            type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                    {% endfor %}
+                    <input type="range" name={{element}} class="range_class" value="3" min="1" max="5"
+                        oninput="this.nextElementSibling.value = this.value">
+                    <output>3</output>
+                </div>
+                {% endfor %}
+                <div>
+                    <button class="btn">Prześlij odpowiedź</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

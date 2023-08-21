@@ -23,8 +23,8 @@ def index():
         else:
             print("Not ok")
     return render_template(
-            "form.html",
-            title="Weryfikacja jakości głosu",
+            "voice_form.html",
+            title="Weryfikacja jakości konwersji głosu",
             speaker_data = os.listdir(VOICE_DATA),
             samples = os.listdir(os.path.join(
                 VOICE_DATA, os.listdir(VOICE_DATA)[0]
