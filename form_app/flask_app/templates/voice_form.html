@@ -30,11 +30,12 @@
         </div>
         {% endblock %}
         <div>
-            <form method='POST'>
+            <form action='#' method='POST'>
+
                 {% for element in speaker_data %}
                 <div class="voice_samples">
                     {% for audio in samples %}
-                    <audio id="audioPlayer" class='audio' controls>
+                    <audio id="audioPlayer" name="voice_display" class='audio' controls>
                         <source src={{url_for('static', filename='/' .join(['voice_data', element , audio]))}}
                             type="audio/wav">
                         Your browser does not support the audio element.

@@ -75,6 +75,10 @@ audio {
     width: 15%;
 }
 
+sample_label {
+    width: 10%;
+}
+
 range_class {
     width: 10%;
 }
