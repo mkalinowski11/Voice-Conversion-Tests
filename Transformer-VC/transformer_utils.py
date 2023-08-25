@@ -1,5 +1,7 @@
 import librosa
 import numpy as np
+from prettytable import PrettyTable
+import copy
 
 FRAME_SHIFT = 0.0125
 FRAME_LENGTH = 0.05
@@ -57,12 +59,8 @@ def signal_trg_pad(source, target):
     if src_len <= trg_len:
         return target[:, :src_len]
     else:
-        n_iter = src_len // trg_len
-        rest_len = src_len - n_iter * trg_len
-        new_trg = target
-        for _ in range(n_iter - 1):
-            new_trg = np.concatenate([new_trg, target])
-        new_trg = np.concatenate([new_trg, target[:, :rest_len]], axis = 1)
+        padding = np.zeros((source.shape[0], src_len - trg_len), dtype=target.dtype)
+        new_trg = np.concatenate([target, padding], axis = 1)
         return new_trg
 
 def normalize(source, target):
