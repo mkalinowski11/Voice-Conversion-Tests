@@ -46,31 +46,32 @@ if __name__ == "__main__":
     source_amp, source_phase = load_wave(SOURCE_SPEECH)
     target_amp, target_phase = load_wave(TARGET_SPEECH)
     #
-    source_amp, target_amp = to_decibel(source_amp),  to_decibel(target_amp)
+    source_amp = to_decibel(source_amp)
+    target_amp = to_decibel(target_amp)
     #
     norm_src, norm_trg, mean, std = normalize(source_amp, target_amp)
-    src_AB, trg_AB =  norm_src, signal_trg_pad(norm_src, norm_trg)
-    src_BA, trg_BA = norm_trg, signal_trg_pad(norm_trg, norm_src)
     #
-    src_AB, trg_AB = torch.from_numpy(src_AB).T, torch.from_numpy(trg_AB).T
-    src_BA, trg_BA = torch.from_numpy(src_BA).T, torch.from_numpy(trg_BA).T
+    src_amp_AB, trg_amp_AB =  norm_src, signal_trg_pad(norm_src, norm_trg)
+    src_amp_BA, trg_amp_BA = norm_trg, signal_trg_pad(norm_trg, norm_src)
+    #
+    src_amp_AB, trg_amp_AB = torch.from_numpy(src_amp_AB).T, torch.from_numpy(trg_amp_AB).T
+    src_amp_BA, trg_amp_BA = torch.from_numpy(src_amp_BA).T, torch.from_numpy(trg_amp_BA).T
     #
     with torch.no_grad():
-        src_to_trg = model(src_AB, trg_AB).T
-        trg_to_src = model(src_BA, trg_BA).T
+        src_to_trg = model(src_amp_AB, trg_amp_AB).T
+        trg_to_src = model(src_amp_BA, trg_amp_BA).T
     #
     src_to_trg, trg_to_src = denormalize(src_to_trg, trg_to_src, mean, std)
     #
-    src_conversion_amp = decibel_revert(src_to_trg)
-    trg_conversion_amp = decibel_revert(trg_to_src)
+    src_to_trg = decibel_revert(src_to_trg)
+    trg_to_src = decibel_revert(trg_to_src)
     #
-    src_conversion = convert_to_complex(src_conversion_amp, source_phase)
-    trg_conversion = convert_to_complex(trg_conversion_amp, target_phase)
-    #
-    src_conversion = librosa.istft(src_conversion)
-    trg_conversion = librosa.istft(trg_conversion)
-    #
-    sf.write(CONVERSION1_PATH, src_conversion, SAMPLE_RATE)
-    sf.write(CONVERSION2_PATH, trg_conversion, SAMPLE_RATE)
-    print(f'Successfully converted voice, output data shape: {src_conversion_amp.shape}, {trg_conversion_amp.shape}')
+    src_trg_conversion = convert_to_complex(src_to_trg, source_phase)
+    trg_src_conversion = convert_to_complex(trg_to_src, target_phase)
+    
+    src_trg_conversion = librosa.istft(src_trg_conversion)
+    trg_src_conversion = librosa.istft(trg_src_conversion)
+
+    sf.write(CONVERSION1_PATH, src_trg_conversion, SAMPLE_RATE)
+    sf.write(CONVERSION2_PATH, trg_src_conversion, SAMPLE_RATE)
     count_parameters(model)
