@@ -35,3 +35,44 @@ def infinite_iter(loader):
             yield ret
         except StopIteration:
             it = iter(loader)
+
+def count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        table.add_row([name, params])
+        total_params+=params
+    # print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
+
+def signal_trg_pad(source, target):
+    #
+    # returns target signal shaped as source
+    #
+    src_len = source.shape[1]
+    trg_len = target.shape[1]
+    if src_len <= trg_len:
+        return target[:, :src_len]
+    else:
+        n_iter = src_len // trg_len
+        rest_len = src_len - n_iter * trg_len
+        new_trg = target
+        for _ in range(n_iter - 1):
+            new_trg = np.concatenate([new_trg, target])
+        new_trg = np.concatenate([new_trg, target[:, :rest_len]], axis = 1)
+        return new_trg
+
+def normalize(source, target):
+    mean = np.mean(np.hstack([source, target]))
+    std = np.std(np.hstack([source, target]))
+    normalized_source = (source - mean) / std
+    normalized_target = (target - mean) / std
+    return normalized_source, normalized_target, mean, std
+
+def denormalize(source, target, mean, std):
+    source = (source.numpy() * std) + mean
+    target = (target.numpy() * std) + mean
+    return source, target
