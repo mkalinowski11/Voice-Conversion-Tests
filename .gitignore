@@ -6,3 +6,5 @@
 *.ckpt
 *.pth
 *.opt
+*.ckpt
+*.pyc
